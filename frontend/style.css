@@ -1,0 +1,933 @@
+/* =============================================================================
+   style.css — Task Manager (v3, Modular)
+   ──────────────────────────────────────
+   Sections:
+   1.  CSS Custom Properties
+   2.  Reset & Base
+   3.  Layout
+   4.  Header
+   5.  Add Task Section  (title + category + due-date)
+   6.  Toolbar           (search + status filter)
+   7.  Category Filter Row
+   8.  Stats Bar
+   9.  State Messages    (loading / empty / offline)
+   10. Task Cards
+   11. Category Badges
+   12. Due Date Chips
+   13. Overdue Cards
+   14. Inline Edit
+   15. Toast Notifications
+   16. Responsive
+============================================================================= */
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. CSS CUSTOM PROPERTIES
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Core palette */
+  --bg:           #0e0e0e;
+  --surface:      #181818;
+  --surface-2:    #222222;
+  --border:       #2e2e2e;
+  --border-focus: #444444;
+  --accent:       #d4f064;
+  --accent-dim:   #b8d44e;
+  --text:         #f0f0f0;
+  --text-muted:   #6a6a6a;
+  --text-mid:     #a0a0a0;
+  --danger:       #ff5a5a;
+  --success:      #52d68a;
+  --warning:      #f0b429;
+
+  /* Category colours — one per category value */
+  --cat-work:     #60a5fa;   /* blue    */
+  --cat-personal: #a78bfa;   /* purple  */
+  --cat-urgent:   #fb7185;   /* red     */
+  --cat-general:  #6a6a6a;   /* muted   */
+
+  /* Shape */
+  --radius:       10px;
+  --radius-sm:    6px;
+  --radius-pill:  100px;
+
+  /* Motion */
+  --ease:         cubic-bezier(0.4, 0, 0.2, 1);
+  --dur:          180ms;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'DM Mono', monospace;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. RESET & BASE
+───────────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  background-image: radial-gradient(circle, #252525 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.hidden { display: none !important; }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. LAYOUT
+───────────────────────────────────────────────────────────────────────────── */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 56px 24px 100px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. HEADER
+───────────────────────────────────────────────────────────────────────────── */
+.header { margin-bottom: 40px; }
+
+.header-badge {
+  display: inline-block;
+  font-size: 0.64rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.header-sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. ADD TASK SECTION
+───────────────────────────────────────────────────────────────────────────── */
+.add-section { margin-bottom: 20px; }
+
+/* Row 1: title + Add button */
+.input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.task-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 13px 18px;
+  outline: none;
+  transition: border-color var(--dur) var(--ease),
+              box-shadow   var(--dur) var(--ease);
+}
+
+.task-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 240, 100, 0.1);
+}
+
+.task-input::placeholder { color: var(--text-muted); }
+
+/* Row 2: category select + due-date picker */
+.meta-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.meta-row label {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Shared wrapper used to normalise <select> and <input type=date> styling */
+
+/* Fix ugly default dropdown */
+select {
+  appearance: none;
+  background: #111;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Add dropdown arrow */
+select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.select-wrap,
+.date-wrap {
+  flex: 1;
+  position: relative;
+}
+
+/*
+  Styling <select> and <input type=date> consistently across browsers is
+  tricky because each browser renders them differently.
+  We use -webkit-appearance: none to strip the native look, then style
+  from scratch so both inputs match the rest of the UI.
+*/
+.meta-select,
+.meta-date {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  padding: 10px 14px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.meta-select:focus,
+.meta-date:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(212, 240, 100, 0.08);
+}
+
+/* Style the native date-picker calendar icon on webkit browsers */
+.meta-date::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+}
+
+/* Placeholder-style colour for when date is empty */
+.meta-date:not(:valid) { color: var(--text-muted); }
+
+/* ── Add Button ── */
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #0e0e0e;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 13px 22px;
+  cursor: pointer;
+  min-width: 80px;
+  transition: background var(--dur) var(--ease),
+              transform  var(--dur) var(--ease);
+}
+
+.add-btn:hover    { background: var(--accent-dim); }
+.add-btn:active   { transform: scale(0.97); }
+.add-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-icon { font-size: 1.1rem; }
+
+/* Inline spinner used inside any button during an API call */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(14, 14, 14, 0.3);
+  border-top-color: #0e0e0e;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg {
+  font-size: 0.77rem;
+  color: var(--danger);
+  min-height: 20px;
+  margin-top: 8px;
+  padding-left: 4px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. TOOLBAR — SEARCH + STATUS FILTER
+───────────────────────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 160px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 11px 14px 11px 36px;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.search-input:focus { border-color: var(--border-focus); }
+.search-input::placeholder { color: var(--text-muted); }
+.search-input::-webkit-search-cancel-button { display: none; }
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              background   var(--dur) var(--ease);
+}
+
+.filter-btn:hover { color: var(--text); border-color: var(--border-focus); }
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0e0e0e;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. CATEGORY FILTER ROW
+   A second pill-bar below the main toolbar, scoped to category.
+   Buttons use data-category attributes read by filters.js.
+───────────────────────────────────────────────────────────────────────────── */
+.category-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.edit-category {
+  appearance: none;
+  background: #111;
+  color: #fff;
+  padding: 6px 30px 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 24 24' width='20'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.task-category-select {
+  appearance: none;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 26px 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='16' viewBox='0 0 24 24' width='16'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.task-category-select:hover {
+  border-color: var(--border-focus);
+}
+
+.task-category-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.field label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.cat-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              background   var(--dur) var(--ease);
+}
+
+.cat-filter-btn:hover { color: var(--text); border-color: var(--border-focus); }
+
+.cat-filter-btn.active {
+  background: var(--surface-2);
+  border-color: var(--border-focus);
+  color: var(--text);
+}
+
+/*
+  Coloured dot shown inside category filter buttons.
+  Each .cat-<value> class maps to the corresponding CSS variable.
+*/
+.cat-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-dot.cat-work     { background: var(--cat-work);     }
+.cat-dot.cat-personal { background: var(--cat-personal); }
+.cat-dot.cat-urgent   { background: var(--cat-urgent);   }
+.cat-dot.cat-general  { background: var(--cat-general);  }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. STATS BAR
+───────────────────────────────────────────────────────────────────────────── */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  padding-left: 2px;
+}
+
+.stat-divider { color: var(--border); }
+.stat--accent { color: var(--accent); }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. STATE MESSAGES — loading / empty / offline
+───────────────────────────────────────────────────────────────────────────── */
+.state-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 52px 24px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.state-icon { font-size: 1.4rem; color: var(--border); }
+
+/* "API offline" specific styles */
+.offline-detail {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.offline-detail code {
+  display: inline-block;
+  margin-top: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: var(--danger);
+}
+
+/* Page-level loading spinner */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. TASK CARDS
+───────────────────────────────────────────────────────────────────────────── */
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;  /* flex-start so check aligns to top of multi-line body */
+  gap: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  transition: border-color var(--dur) var(--ease),
+              opacity      var(--dur) var(--ease);
+  animation: slideIn 0.22s var(--ease) both;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.task-item:hover { border-color: #3a3a3a; }
+
+/* Completed */
+.task-item.completed          { opacity: 0.45; }
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Hidden by filter/search */
+.task-item.filter-hidden { display: none; }
+
+/* Check circle */
+.task-check {
+  flex-shrink: 0;
+  margin-top: 2px;   /* optical alignment with first line of title */
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--dur) var(--ease),
+              background   var(--dur) var(--ease);
+}
+
+.task-check:hover { border-color: var(--accent); }
+
+.task-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.task-check.checked::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 3px; left: 5px;
+  width: 5px; height: 9px;
+  border: 2px solid #0e0e0e;
+  border-top: none;
+  border-left: none;
+  transform: rotate(42deg);
+}
+
+/* Task body */
+.task-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Row holding category badge + due-date chip */
+.task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 18px; /* keeps layout stable when badges are absent */
+}
+
+.task-title {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+  cursor: text;
+}
+
+.task-date {
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* Actions */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.task-progress {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.task-remaining {
+  font-size: 0.75rem;
+  color: #00ffcc;
+}
+
+.task-time-info {
+  display: flex;
+  gap: 10px;
+  font-size: 0.7rem;
+  margin-top: 4px;
+}
+
+.time-left {
+  color: var(--accent);
+}
+
+.time-active {
+  color: var(--text-muted);
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.delete-btn {
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              background   var(--dur) var(--ease);
+}
+
+.delete-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255, 90, 90, 0.06);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. CATEGORY BADGES
+   Small coloured pill on each task card showing its category.
+   Colours match the CSS variables and the dots in the filter bar.
+───────────────────────────────────────────────────────────────────────────── */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+  line-height: 1.6;
+}
+
+.cat-work {
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--cat-work);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.cat-personal {
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--cat-personal);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.cat-urgent {
+  background: rgba(251, 113, 133, 0.12);
+  color: var(--cat-urgent);
+  border: 1px solid rgba(251, 113, 133, 0.25);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   12. DUE DATE CHIPS
+───────────────────────────────────────────────────────────────────────────── */
+.due-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+  line-height: 1.6;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Due today — amber warning */
+.due-chip--today {
+  background: rgba(240, 180, 41, 0.1);
+  color: var(--warning);
+  border-color: rgba(240, 180, 41, 0.3);
+}
+
+/* Overdue — red alert */
+.due-chip--overdue {
+  background: rgba(255, 90, 90, 0.1);
+  color: var(--danger);
+  border-color: rgba(255, 90, 90, 0.3);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   13. OVERDUE CARDS
+   Tasks that have a past due date get a subtle red left-border accent.
+───────────────────────────────────────────────────────────────────────────── */
+.task-item.overdue {
+  border-left: 3px solid var(--danger);
+  /* compensate the extra 1.5px so card width doesn't shift */
+  padding-left: calc(14px - 1.5px);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   14. INLINE EDIT MODE
+───────────────────────────────────────────────────────────────────────────── */
+.task-item.editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 240, 100, 0.08);
+}
+
+.edit-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.edit-input:focus { border-color: var(--accent); }
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #0e0e0e;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  cursor: pointer;
+  min-width: 52px;
+  transition: background var(--dur) var(--ease);
+}
+
+.save-btn:hover    { background: var(--accent-dim); }
+.save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cancel-btn {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease),
+              color        var(--dur) var(--ease);
+}
+
+.cancel-btn:hover { border-color: var(--border-focus); color: var(--text); }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   15. TOAST NOTIFICATIONS
+───────────────────────────────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 0.82rem;
+  color: var(--text);
+  min-width: 220px;
+  max-width: 340px;
+  pointer-events: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: toastIn 0.28s var(--ease) both;
+}
+
+.toast::before {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 3px;
+  min-height: 16px;
+  border-radius: 2px;
+}
+
+.toast.success::before { background: var(--success); }
+.toast.error::before   { background: var(--danger);  }
+.toast.info::before    { background: var(--accent);  }
+.toast.warning::before { background: var(--warning); }
+
+.toast.removing { animation: toastOut 0.25s var(--ease) both; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0)   scale(1);    }
+  to   { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+
+.toast-icon { font-size: 0.95rem; flex-shrink: 0; }
+.toast-msg  { flex: 1; }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   16. RESPONSIVE
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .container { padding: 32px 16px 80px; }
+
+  .meta-row { flex-direction: column; }
+
+  /* Stack search above status filter buttons on small screens */
+  .search-wrap { min-width: 100%; order: -1; }
+
+  /* Show only the "+" icon on the Add button */
+  .btn-text > :not(.btn-icon) { display: none; }
+  .add-btn { padding: 13px 18px; }
+
+  .toast-container { bottom: 16px; right: 16px; left: 16px; }
+  .toast { min-width: unset; max-width: 100%; }
+}

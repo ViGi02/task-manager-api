@@ -47,7 +47,7 @@ const getTaskById = async (req, res, next) => {
 
 const createTask = async (req, res, next) => {
   try {
-    const { title, completed } = req.body;
+    const { title, completed, category, dueDate } = req.body;
 
     // Lean validation before hitting the DB
     if (!title || typeof title !== 'string' || title.trim() === '') {
@@ -61,6 +61,8 @@ const createTask = async (req, res, next) => {
       title,
       // only set completed if explicitly provided, otherwise let the model default kick in
       ...(completed !== undefined && { completed }),
+      ...(category && { category }),
+      ...(dueDate && { dueDate }),
     });
 
     res.status(201).json({ success: true, data: task });
@@ -84,7 +86,7 @@ const updateTask = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Invalid task ID.' });
     }
 
-    const { title, completed } = req.body;
+    const { title, completed, category, dueDate } = req.body;
 
     // Validate fields that were actually sent
     if (title !== undefined) {
@@ -101,6 +103,8 @@ const updateTask = async (req, res, next) => {
     const updates = {};
     if (title !== undefined) updates.title = title.trim();
     if (completed !== undefined) updates.completed = completed;
+    if (category !== undefined) updates.category = category;
+    if (dueDate !== undefined) updates.dueDate = dueDate;
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ success: false, error: 'No valid fields provided for update.' });

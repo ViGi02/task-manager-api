@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Manager</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+
+    <!-- ── Toast overlay (outside .container so it overlays everything) ── -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <div class="container">
+
+      <!-- ── Header ────────────────────────────────────────────────────── -->
+      <header class="header">
+        <div class="header-badge">Manage Your Tasks Efficiently</div>
+        <h1 class="header-title">Task Manager</h1>
+        <p class="header-sub">Node.js · Express · MongoDB</p>
+      </header>
+
+      <!-- ── Add Task ──────────────────────────────────────────────────── -->
+      <!--
+        The form now has THREE inputs:
+        1. Task title (existing)
+        2. Category dropdown — populated by JavaScript from config.js
+        3. Due date — an optional date picker
+        All three are read by handleAddTask() in app.js.
+      -->
+      <section class="add-section" aria-label="Add a new task">
+
+        <!-- Row 1: title + submit button -->
+        <div class="input-row">
+          <input
+            type="text"
+            id="taskInput"
+            class="task-input"
+            placeholder="What needs doing?"
+            autocomplete="off"
+            maxlength="120"
+            aria-label="New task title"
+          />
+          <button id="addBtn" class="add-btn" aria-label="Add task">
+            <span class="btn-text">Add Task <span class="btn-icon" aria-hidden="true">+</span></span>
+            <span class="btn-spinner hidden" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- Row 2: category + due date (secondary controls) -->
+        <div class="meta-row">
+          
+          <!--
+            Category select — options are injected by app.js so the list
+            is always in sync with config.js CATEGORIES.
+          -->
+
+          <div class="field">
+            <label for="categorySelect">Category</label>
+            <div class="select-wrap">              
+              <select id="categorySelect" class="meta-select" aria-label="Task category">
+                <!-- Options added dynamically by app.js -->
+              </select>
+            </div>
+          </div>
+
+          <!--
+            Due date — optional. An empty value is treated as "no due date".
+            The min attribute prevents selecting dates in the past.
+          -->
+          
+          <div class="field">
+            <label for="dueDateInput">Due Date</label>
+            <div class="date-wrap">
+              <input
+                type="date"
+                id="dueDateInput"
+                class="meta-date"
+                aria-label="Due date (optional)"
+                title="Optional due date"
+              />
+            </div>
+          </div>
+        </div>
+
+        <p id="errorMsg" class="error-msg" role="alert" aria-live="polite"></p>
+      </section>
+
+      <!-- ── Toolbar ───────────────────────────────────────────────────── -->
+      <!--
+        Two filter rows + one search bar.
+        Row 1: Status filter   (All / Active / Done)
+        Row 2: Category filter (All / Work / Personal / Urgent / General)
+        All buttons use data attributes that filters.js reads.
+      -->
+      <div class="toolbar">
+
+        <!-- Search -->
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search tasks…"
+            aria-label="Search tasks by title"
+            autocomplete="off"
+          />
+        </div>
+
+        <!-- Status filter pills -->
+        <div class="filter-group" role="group" aria-label="Filter by status">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn"        data-filter="active">Active</button>
+          <button class="filter-btn"        data-filter="completed">Done</button>
+        </div>
+
+      </div>
+
+      <!-- Category filter row (separate row to avoid crowding the toolbar) -->
+      <div class="category-filter-row" role="group" aria-label="Filter by category">
+        <button class="cat-filter-btn active" data-category="all">All</button>
+        <button class="cat-filter-btn" data-category="work">
+          <span class="cat-dot cat-work"></span>Work
+        </button>
+        <button class="cat-filter-btn" data-category="personal">
+          <span class="cat-dot cat-personal"></span>Personal
+        </button>
+        <button class="cat-filter-btn" data-category="urgent">
+          <span class="cat-dot cat-urgent"></span>Urgent
+        </button>
+        <button class="cat-filter-btn" data-category="general">
+          <span class="cat-dot cat-general"></span>General
+        </button>
+      </div>
+
+      <!-- ── Stats Bar ─────────────────────────────────────────────────── -->
+      <div class="stats-bar">
+        <span id="taskCount"    class="stat">0 tasks</span>
+        <span class="stat-divider">·</span>
+        <span id="doneCount"    class="stat">0 done</span>
+        <span class="stat-divider">·</span>
+        <span id="filteredNote" class="stat stat--accent hidden">filtered</span>
+      </div>
+
+      <!-- ── Task List ─────────────────────────────────────────────────── -->
+      <main>
+
+        <div id="loadingState" class="state-message">
+          <div class="spinner"></div>
+          <span>Fetching tasks…</span>
+        </div>
+
+        <!--
+          emptyState is also used for the "API offline" message.
+          JavaScript swaps the icon and text inside it when the API fails.
+        -->
+        <div id="emptyState" class="state-message hidden">
+          <span class="state-icon">✦</span>
+          <span id="emptyText">No tasks yet. Add one above.</span>
+        </div>
+
+        <ul id="taskList" class="task-list" aria-label="Task list"></ul>
+
+      </main>
+
+    </div><!-- /container -->
+
+    <!--
+      type="module" enables ES module syntax (import/export) in the browser.
+      It also defers execution automatically, so the DOM is ready by the time
+      the script runs — no need to put the tag at the bottom of <body>,
+      though we do anyway as a best practice.
+    -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
